@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
  
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:unsplashmin/ui/viewimage.dart';
 void main(){ 
    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
     systemNavigationBarColor: Colors.white, // navigation bar color
@@ -25,7 +26,7 @@ void main(){
 class _HomeState extends State<Home> {
 TextEditingController _buscar=TextEditingController();
   Future<List> _getImages()async{
-      var url='https://api.unsplash.com/search/photos?client_id=c7e125a52a3ce6bfc3830c1dab951ee6d1fa2a06980873f9d894ad615e197df8&query=peru';    
+      var url='https://api.unsplash.com/search/photos/?client_id=c7e125a52a3ce6bfc3830c1dab951ee6d1fa2a06980873f9d894ad615e197df8&query=peru&page=1&per_page=50';    
       //https://api.unsplash.com/photos/?client_id=c7e125a52a3ce6bfc3830c1dab951ee6d1fa2a06980873f9d894ad615e197df8
       var response=await http.get(url);
       print(response.body);
@@ -128,9 +129,15 @@ TextEditingController _buscar=TextEditingController();
                    itemCount: fotos.length,
                    itemBuilder: (context,index){
                      return Container( 
-                          child:ClipRRect(borderRadius: BorderRadius.circular(10),
+                          child: GestureDetector(
+                            child:ClipRRect(borderRadius: BorderRadius.circular(10),
                            child:Image.network('${fotos[index]['urls']['small']}',fit: BoxFit.cover,) 
-                          ,)
+                          ,),
+                          onTap: (){
+                              Navigator.push(context,
+                                MaterialPageRoute(builder: (context)=>ViewImage(fotos[index]['urls']['regular'])));
+                          },
+                          ),
                      );
                    },
                    staggeredTileBuilder: (i)=>StaggeredTile.count(2,i.isEven?2:3), 
