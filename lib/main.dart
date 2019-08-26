@@ -7,7 +7,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:unsplashmin/ui/viewimage.dart';
 void main(){ 
    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-    systemNavigationBarColor: Colors.white, // navigation bar color
+    systemNavigationBarColor: Colors.black, // navigation bar color
     statusBarColor: Colors.white, // status bar color
     statusBarIconBrightness: Brightness.dark
      
@@ -24,20 +24,41 @@ void main(){
 }
 
 class _HomeState extends State<Home> {
+  List urls;
+final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
+    new GlobalKey<RefreshIndicatorState>();
 TextEditingController _buscar=TextEditingController();
-  Future<List> _getImages()async{
-      var url='https://api.unsplash.com/search/photos/?client_id=c7e125a52a3ce6bfc3830c1dab951ee6d1fa2a06980873f9d894ad615e197df8&query=peru&page=1&per_page=50';    
+String busqueda='Girl';
+  Future<List> _getImages(String busca)async{
+      var url='https://api.unsplash.com/search/photos/?client_id=c7e125a52a3ce6bfc3830c1dab951ee6d1fa2a06980873f9d894ad615e197df8&query=$busca&page=1&per_page=50';    
       //https://api.unsplash.com/photos/?client_id=c7e125a52a3ce6bfc3830c1dab951ee6d1fa2a06980873f9d894ad615e197df8
       var response=await http.get(url);
       print(response.body);
       var respuesta=jsonDecode(response.body)['results'];
       // print('${response.body}');
-      List urls=respuesta;
-      
+      urls=respuesta;      
        return urls;
     
   }
 
+  Future<Null> _refresh(){
+    return _getImages(busqueda).then((_url){
+      setState(() =>urls=_url);
+    });
+  }
+
+  void _handleSubmission(String text) {
+    busqueda=text;
+    return print('$text');
+    
+// Not triggered when you press enter on keyboard in  android simulator
+// Triggers if you tap on the Done button.
+}
+ @override
+ void initState(){
+   super.initState();
+   WidgetsBinding.instance.addPostFrameCallback((_)=>_refreshIndicatorKey.currentState.show());
+ }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -61,12 +82,12 @@ TextEditingController _buscar=TextEditingController();
             children: <Widget>[
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[                   
                   Icon(Icons.menu),                  
                   CircleAvatar(
-                    radius: 10,
-                    backgroundColor: Colors.black,
+                      radius: 15,
+                    backgroundImage: AssetImage("images/avatar.png"),
                   )
 
                 ],
@@ -80,13 +101,12 @@ TextEditingController _buscar=TextEditingController();
               ),
               Text('Beautiful, free photos.',style: TextStyle(fontSize: 15),),
               SizedBox(
-                  height:10,
+                  height:20,
               ),
-              TextField(
-                 
+              TextField(                
                 controller: _buscar,
                 decoration: InputDecoration(
-                    
+                  contentPadding: EdgeInsets.symmetric(vertical: 15,horizontal: 15),
                   fillColor: Colors.black,
                   focusColor: Colors.black,
                   hoverColor: Colors.black,
@@ -97,6 +117,7 @@ TextEditingController _buscar=TextEditingController();
                   ),
                   hintText: 'Search photos'
                 ),
+              onSubmitted: _handleSubmission,
 
               )
             ],
@@ -112,14 +133,17 @@ TextEditingController _buscar=TextEditingController();
         padding: EdgeInsets.only(left:20,right: 20),
         height: MediaQuery.of(context).size.height,
         width: MediaQuery.of(context).size.width,
-        child: FutureBuilder(
-          future: _getImages(),
+        child: RefreshIndicator(
+          key: _refreshIndicatorKey,
+          onRefresh: _refresh,
+          child: FutureBuilder(
+          future: _getImages(busqueda),
           builder: (BuildContext context,AsyncSnapshot snapshot){
             var fotos=snapshot.data;
             if(snapshot.data==null){
               return Container(
                 child: Center(
-                  child: CircularProgressIndicator(),
+                  //child: CircularProgressIndicator(),
                 ),
               );
             }else{
@@ -131,8 +155,11 @@ TextEditingController _buscar=TextEditingController();
                      return Container( 
                           child: GestureDetector(
                             child:ClipRRect(borderRadius: BorderRadius.circular(10),
-                           child:Image.network('${fotos[index]['urls']['small']}',fit: BoxFit.cover,) 
+                           child:Hero(
+                             tag:fotos[index]['urls']['small'],
+                             child: Image.network('${fotos[index]['urls']['small']}',fit: BoxFit.cover,) 
                           ,),
+                           ),
                           onTap: (){
                               Navigator.push(context,
                                 MaterialPageRoute(builder: (context)=>ViewImage(fotos[index]['urls']['regular'])));
@@ -148,8 +175,11 @@ TextEditingController _buscar=TextEditingController();
 
           },
         ),
+        )
          
       ),
     );
  }
+
+  
 }
